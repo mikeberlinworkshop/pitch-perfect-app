@@ -62,13 +62,19 @@ export function renderPitch() {
         }
                 </div>
                 <!-- Slide thumbnails strip -->
-                <div class="slide-strip">
-                    ${state.slides.map((s, i) => `
-                        <div class="slide-thumb ${i === state.currentSlideIndex ? 'active' : ''} ${i < state.currentSlideIndex ? 'done' : ''}" data-slide="${i}">
-                            <img src="${s.imageDataUrl}" alt="Slide ${i + 1}" />
-                            <span>${i + 1}</span>
-                        </div>
-                    `).join('')}
+                <div class="slide-strip-container">
+                    <div class="slide-strip-label">
+                        <i data-lucide="mouse-pointer-click"></i>
+                        Click any slide to jump
+                    </div>
+                    <div class="slide-strip">
+                        ${state.slides.map((s, i) => `
+                            <div class="slide-thumb ${i === state.currentSlideIndex ? 'active' : ''} ${i < state.currentSlideIndex ? 'done' : ''}" data-slide="${i}">
+                                <img src="${s.imageDataUrl}" alt="Slide ${i + 1}" />
+                                <span>${i + 1}</span>
+                            </div>
+                        `).join('')}
+                    </div>
                 </div>
             </div>
 

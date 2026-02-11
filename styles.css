@@ -624,13 +624,30 @@ body {
 .qa-overlay h3 { font-size: 20px; color: var(--text-primary); margin-bottom: 8px; }
 
 /* Slide Strip */
+.slide-strip-container {
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+    padding: 8px 20px 10px;
+}
+
+.slide-strip-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.slide-strip-label svg {
+    width: 12px;
+    height: 12px;
+}
+
 .slide-strip {
     display: flex;
     gap: 6px;
-    padding: 10px 20px;
     overflow-x: auto;
-    border-top: 1px solid var(--border);
-    flex-shrink: 0;
 }
 
 .slide-thumb {
@@ -639,17 +656,29 @@ body {
     cursor: pointer;
     border-radius: 6px;
     overflow: hidden;
-    border: 2px solid transparent;
+    border: 2px solid var(--border);
     position: relative;
     transition: all 0.2s;
 }
 
-.slide-thumb.active {
+.slide-thumb:hover {
     border-color: var(--accent);
-    box-shadow: 0 0 8px var(--accent-glow);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-.slide-thumb.done { opacity: 0.5; }
+.slide-thumb.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.slide-thumb.done {
+    opacity: 0.6;
+}
+
+.slide-thumb.done:hover {
+    opacity: 1;
+}
 
 .slide-thumb img {
     width: 100%;
