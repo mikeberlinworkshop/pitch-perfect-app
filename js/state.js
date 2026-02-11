@@ -33,7 +33,10 @@ export const state = {
     // Audio
     isAudioPlaying: false,
     isRecording: false,
-    voiceEnabled: true
+    voiceEnabled: true,
+
+    // VC intro
+    vcIntroShown: false
 };
 
 const listeners = new Map();
@@ -64,6 +67,7 @@ export function resetPitch() {
     state.turnScores = [];
     state.results = null;
     state.coaching = null;
+    state.vcIntroShown = false;
 }
 
 export function resetAll() {

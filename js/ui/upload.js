@@ -53,14 +53,20 @@ export function renderUpload() {
                     </div>
                 </div>
 
-                <div class="slide-preview hidden" id="slidePreview">
+                <div class="slide-preview ${state.slides.length > 0 ? '' : 'hidden'}" id="slidePreview">
+                    <div class="upload-success" id="uploadSuccess">
+                        <i data-lucide="check-circle"></i>
+                        <span>Deck uploaded successfully!</span>
+                    </div>
                     <div class="slide-preview-header">
-                        <span id="slideCount"></span>
+                        <span id="slideCount">${state.slides.length} slides ready</span>
                         <button class="btn btn-ghost btn-sm" id="clearDeck">
                             <i data-lucide="x"></i> Clear
                         </button>
                     </div>
-                    <div class="slide-thumbnails" id="slideThumbnails"></div>
+                    <div class="slide-thumbnails" id="slideThumbnails">
+                        ${state.slides.map((s, i) => `<img src="${s.imageDataUrl}" alt="Slide ${i+1}" />`).join('')}
+                    </div>
                 </div>
             </div>
 

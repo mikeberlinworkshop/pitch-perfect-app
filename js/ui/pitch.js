@@ -108,14 +108,18 @@ export function renderPitch() {
 
                 <div class="chat-input-area">
                     <div id="interimTranscript" class="interim-transcript"></div>
-                    <div class="chat-input-row">
-                        <button class="btn btn-icon" id="micBtn" title="Voice input">
-                            <i data-lucide="mic"></i>
+                    <div class="voice-input-section">
+                        <button class="btn btn-voice" id="micBtn">
+                            <div class="mic-icon-wrap">
+                                <i data-lucide="mic"></i>
+                            </div>
+                            <span class="mic-label">Hold to speak</span>
                         </button>
-                        <textarea id="userInput" placeholder="${isQA ? 'Answer the question...' : 'Explain this slide...'}" rows="2"></textarea>
-                        <button class="btn btn-primary btn-icon" id="sendBtn" title="Send">
-                            <i data-lucide="send"></i>
-                        </button>
+                        <p class="voice-hint" id="voiceHint">Press and hold, then speak. Release when done.</p>
+                        <div class="recording-indicator hidden" id="recordingIndicator">
+                            <div class="pulse-ring"></div>
+                            <span>Listening...</span>
+                        </div>
                     </div>
                     <div class="loading-indicator hidden" id="loadingIndicator">
                         <div class="typing-dots">
@@ -130,30 +134,94 @@ export function renderPitch() {
 
     setupPitchEvents();
     scrollToBottom();
+
+    // Show VC intro on first load
+    if (state.conversationHistory.length === 0 && !state.vcIntroShown) {
+        showVCIntro();
+    }
+}
+
+async function showVCIntro() {
+    const persona = state.selectedPersona;
+    if (!persona.introMessage) return;
+
+    state.vcIntroShown = true;
+
+    // Small delay for effect
+    await new Promise(r => setTimeout(r, 800));
+
+    // Remove chat intro
+    const intro = document.querySelector('.chat-intro');
+    if (intro) intro.remove();
+
+    // Add VC intro message
+    addMessage('vc', persona.introMessage);
+
+    // Speak the intro
+    if (state.voiceEnabled) {
+        await speakText(persona.introMessage, persona.voiceId);
+    }
 }
 
 function setupPitchEvents() {
-    // Send message
-    const sendBtn = document.getElementById('sendBtn');
-    const userInput = document.getElementById('userInput');
+    // Voice input with press-and-hold
+    const micBtn = document.getElementById('micBtn');
+    const recordingIndicator = document.getElementById('recordingIndicator');
+    const voiceHint = document.getElementById('voiceHint');
+    let currentTranscript = '';
 
-    sendBtn?.addEventListener('click', () => sendMessage());
-    userInput?.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
+    const startRecording = () => {
+        micBtn?.classList.add('recording');
+        recordingIndicator?.classList.remove('hidden');
+        voiceHint?.classList.add('hidden');
+        currentTranscript = '';
+
+        toggleRecording((transcript) => {
+            currentTranscript = transcript;
+            // Show interim transcript
+            const interimEl = document.getElementById('interimTranscript');
+            if (interimEl) {
+                interimEl.textContent = transcript;
+            }
+        });
+    };
+
+    const stopRecording = () => {
+        micBtn?.classList.remove('recording');
+        recordingIndicator?.classList.add('hidden');
+        voiceHint?.classList.remove('hidden');
+
+        // Stop recording and send message
+        toggleRecording(() => {});
+
+        // Clear interim transcript
+        const interimEl = document.getElementById('interimTranscript');
+        if (interimEl) interimEl.textContent = '';
+
+        // Send the message if we have transcript
+        if (currentTranscript.trim()) {
+            sendVoiceMessage(currentTranscript.trim());
+        }
+        currentTranscript = '';
+    };
+
+    // Mouse events
+    micBtn?.addEventListener('mousedown', startRecording);
+    micBtn?.addEventListener('mouseup', stopRecording);
+    micBtn?.addEventListener('mouseleave', () => {
+        if (micBtn?.classList.contains('recording')) {
+            stopRecording();
         }
     });
 
-    // Mic button
-    const micBtn = document.getElementById('micBtn');
-    micBtn?.addEventListener('click', () => {
-        toggleRecording((transcript) => {
-            const input = document.getElementById('userInput');
-            if (input) {
-                input.value += (input.value ? ' ' : '') + transcript;
-            }
-        });
+    // Touch events for mobile
+    micBtn?.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        startRecording();
+    });
+    micBtn?.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        stopRecording();
     });
 
     // Voice toggle
@@ -219,12 +287,8 @@ function advanceSlide() {
     }
 }
 
-async function sendMessage() {
-    const input = document.getElementById('userInput');
-    if (!input || !input.value.trim()) return;
-
-    const message = input.value.trim();
-    input.value = '';
+async function sendVoiceMessage(message) {
+    if (!message) return;
 
     // Add user message
     addMessage('user', message);
@@ -337,12 +401,12 @@ function addMessage(role, content) {
 
 function setLoading(loading) {
     const indicator = document.getElementById('loadingIndicator');
-    const sendBtn = document.getElementById('sendBtn');
-    const input = document.getElementById('userInput');
+    const micBtn = document.getElementById('micBtn');
+    const voiceSection = document.querySelector('.voice-input-section');
 
     if (indicator) indicator.classList.toggle('hidden', !loading);
-    if (sendBtn) sendBtn.disabled = loading;
-    if (input) input.disabled = loading;
+    if (micBtn) micBtn.disabled = loading;
+    if (voiceSection) voiceSection.classList.toggle('disabled', loading);
 }
 
 function scrollToBottom() {
