@@ -58,7 +58,7 @@ export async function getVCResponse(userMessage, persona, slideContext, conversa
     if (pitchPhase === 'qa') {
         phaseInstructions = `\n\nYou are now in the Q&A portion after the presentation. Ask deeper follow-up questions based on everything you've seen in the deck. Dig into weaknesses you noticed. This is your chance to really probe.`;
     } else if (pitchPhase === 'feedback') {
-        phaseInstructions = `\n\nThe founder has paused to get coaching feedback. Break character temporarily and provide direct, actionable coaching. Be constructive but honest. Focus on 2-3 specific things they could improve right now. Format as bullet points. After they resume, you'll go back to being in character.`;
+        phaseInstructions = `\n\nThe founder has paused to get coaching feedback. Break character temporarily and provide direct, actionable coaching. Be constructive but honest. Focus on 2-3 specific things they could improve right now. Format as bullet points. Do NOT include [SCORES] or [SHOULD_INTERRUPT] tags for this coaching response.`;
     } else {
         phaseInstructions = `\n\nThe founder is currently presenting their pitch deck. ${slideContext ? `They are showing a slide with this content:\n---\n${slideContext}\n---\nAsk questions relevant to this specific slide content and what they're saying about it.` : ''}`;
     }

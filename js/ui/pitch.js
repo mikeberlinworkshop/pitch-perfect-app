@@ -547,27 +547,46 @@ async function getDetailedFeedback() {
     const slide = getCurrentSlide();
     const persona = state.selectedPersona;
 
+    // Check if there's any conversation to give feedback on
+    const userMessages = state.conversationHistory.filter(m => m.role === 'user');
+    if (userMessages.length === 0) {
+        const feedbackNotes = document.getElementById('feedbackNotes');
+        if (feedbackNotes) {
+            feedbackNotes.innerHTML = '<span class="feedback-empty">Start pitching first, then request feedback!</span>';
+        }
+        return;
+    }
+
     setLoading(true);
 
     try {
-        // Build context for feedback request
+        // Build context for feedback request - use full history for context
         const slideContext = slide ? `Slide ${slide.pageNumber}: ${slide.text}` : 'Q&A phase';
-        const recentExchanges = state.conversationHistory.slice(-6);
 
-        const feedbackPrompt = `The founder has paused to get explicit feedback. Based on the recent conversation, provide 2-3 specific, actionable coaching points. Be direct but constructive. Focus on what they could do better right now. Format as bullet points.`;
+        // Create a summary of what the founder has said
+        const founderSummary = userMessages.map(m => m.content).join('\n\n');
+
+        const feedbackPrompt = `[COACHING REQUEST - Do not add this to conversation]
+
+The founder wants explicit coaching feedback. Here's what they've said so far:
+---
+${founderSummary}
+---
+
+Provide 2-3 specific, actionable coaching points about their pitch delivery and content. Be direct but constructive. Focus on what they could improve. Format as bullet points.`;
 
         const { response } = await getVCResponse(
             feedbackPrompt,
             persona,
             slideContext,
-            recentExchanges,
+            [], // Empty history - we're providing context in the prompt
             'feedback'
         );
 
-        // Show feedback in a more prominent way
+        // Show feedback in the panel (not in chat)
         const feedbackNotes = document.getElementById('feedbackNotes');
         if (feedbackNotes) {
-            feedbackNotes.innerHTML = `<strong>Feedback on this slide:</strong><br>${response.replace(/\n/g, '<br>')}`;
+            feedbackNotes.innerHTML = `<strong>Coaching feedback:</strong><br>${response.replace(/\n/g, '<br>')}`;
         }
 
         // Expand the feedback panel
@@ -577,6 +596,9 @@ async function getDetailedFeedback() {
             panel.classList.add('expanded');
             panel.classList.remove('collapsed');
         }
+
+        // Update chevron
+        if (window.lucide) lucide.createIcons();
 
         // Speak the feedback
         if (state.voiceEnabled) {
