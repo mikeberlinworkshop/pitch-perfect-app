@@ -251,22 +251,12 @@ function updateStartButton() {
 function setupStartButton() {
     const startBtn = document.getElementById('startPitchBtn');
     startBtn?.addEventListener('click', () => {
-        console.log('Start button clicked');
-        console.log('Slides:', state.slides.length);
-        console.log('Persona:', state.selectedPersona);
-        console.log('Industry:', state.selectedIndustry);
-
         const isReady = state.slides.length > 0 &&
                         state.selectedPersona &&
                         (state.selectedPersona.id !== 'industry-expert' || state.selectedIndustry);
 
-        console.log('Is ready:', isReady);
-
         if (isReady) {
-            console.log('Navigating to pitch...');
             navigate('pitch');
-        } else {
-            console.log('Not ready to start pitch');
         }
     });
 }

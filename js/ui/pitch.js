@@ -20,8 +20,7 @@ export function renderPitch() {
 
     const persona = state.selectedPersona;
     if (!persona) {
-        console.error('No persona selected, cannot render pitch screen');
-        screen.innerHTML = '<div style="padding: 40px; color: white;">Error: No persona selected. Please go back and select a VC.</div>';
+        screen.innerHTML = '<div style="padding: 40px; color: white;">Please go back and select a VC.</div>';
         return;
     }
 
