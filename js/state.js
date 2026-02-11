@@ -19,6 +19,7 @@ export const state = {
     conversationHistory: [],  // Full conversation for current pitch
     slideConversations: [],   // Conversation grouped by slide
     currentSlideExchanges: 0,
+    currentSlideWords: 0,     // Track words spoken on current slide
     qaExchanges: 0,
 
     // Scoring (accumulated from per-turn scores)
@@ -64,6 +65,7 @@ export function resetPitch() {
     state.conversationHistory = [];
     state.slideConversations = [];
     state.currentSlideExchanges = 0;
+    state.currentSlideWords = 0;
     state.qaExchanges = 0;
     state.turnScores = [];
     state.results = null;

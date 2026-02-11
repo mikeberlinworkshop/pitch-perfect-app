@@ -271,6 +271,7 @@ function advanceSlide() {
     if (state.currentSlideIndex < state.slides.length - 1) {
         state.currentSlideIndex++;
         state.currentSlideExchanges = 0;
+        state.currentSlideWords = 0;
         renderPitch();
         if (window.lucide) lucide.createIcons();
     } else {
@@ -290,6 +291,10 @@ function advanceSlide() {
 async function sendVoiceMessage(message) {
     if (!message) return;
 
+    // Track words spoken on this slide
+    const wordCount = message.split(/\s+/).length;
+    state.currentSlideWords += wordCount;
+
     // Add user message
     addMessage('user', message);
     setLoading(true);
@@ -298,12 +303,14 @@ async function sendVoiceMessage(message) {
         const slide = getCurrentSlide();
         const slideContext = slide ? `Slide ${slide.pageNumber}: ${slide.text}` : '';
 
+        // Pass word count context for interruption timing
         const { response, scores } = await getVCResponse(
             message,
             state.selectedPersona,
             slideContext,
             state.conversationHistory,
-            state.pitchPhase
+            state.pitchPhase,
+            state.currentSlideWords
         );
 
         // Store scores

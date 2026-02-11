@@ -47,7 +47,7 @@ export async function generateSpeech(text, voiceId) {
  * Get VC response during pitch
  * Sends slide content + founder message, gets in-character response with scores
  */
-export async function getVCResponse(userMessage, persona, slideContext, conversationHistory, pitchPhase) {
+export async function getVCResponse(userMessage, persona, slideContext, conversationHistory, pitchPhase, slideWordCount = 0) {
     const messages = conversationHistory.map(msg => ({
         role: msg.role === 'vc' ? 'assistant' : 'user',
         content: msg.content
@@ -63,7 +63,19 @@ export async function getVCResponse(userMessage, persona, slideContext, conversa
         ? `\n\nIMPORTANT: This startup is in the ${state.selectedIndustry} vertical. You are an expert investor who specializes in ${state.selectedIndustry}. Draw on deep domain knowledge of this specific industry — regulations, distribution channels, key players, technical challenges, and common failure modes. Ask questions that only a true ${state.selectedIndustry} specialist would know to ask.`
         : '';
 
-    const systemPrompt = persona.systemPrompt + industryContext + phaseInstructions +
+    // Control interruption aggressiveness based on how much founder has said
+    let interruptionGuidance = '';
+    if (pitchPhase === 'presenting') {
+        if (slideWordCount < 50) {
+            interruptionGuidance = `\n\nINTERRUPTION GUIDANCE: The founder has only said ~${slideWordCount} words on this slide. Let them talk more. Give a brief encouraging response like "Go on..." or "Okay, tell me more" or just nod along with "Mm-hmm, interesting." Do NOT ask probing questions yet — let them finish their thought first.`;
+        } else if (slideWordCount < 100) {
+            interruptionGuidance = `\n\nINTERRUPTION GUIDANCE: The founder has said ~${slideWordCount} words on this slide. You can ask ONE clarifying question if something genuinely doesn't add up, but otherwise let them continue presenting.`;
+        } else {
+            interruptionGuidance = `\n\nINTERRUPTION GUIDANCE: The founder has now said ~${slideWordCount} words on this slide — they've had time to explain. Now you can push back, ask hard questions, or challenge claims that don't hold up.`;
+        }
+    }
+
+    const systemPrompt = persona.systemPrompt + industryContext + phaseInstructions + interruptionGuidance +
         `\n\nIMPORTANT: This is attempt ${conversationHistory.length === 0 ? '#1' : 'ongoing'}. Stay in character at all times.`;
 
     const response = await callClaude(messages, systemPrompt);
