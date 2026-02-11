@@ -9,6 +9,8 @@ import { DEFAULT_VOICE_ID } from './config.js';
 let recognition = null;
 let currentAudio = null;
 let onSpeechResult = null;
+let onRecordingEnd = null;
+let accumulatedTranscript = '';
 
 // ============================================
 // SPEECH RECOGNITION
@@ -22,7 +24,7 @@ export function setupSpeechRecognition() {
     }
 
     recognition = new SpeechRecognition();
-    recognition.continuous = false;
+    recognition.continuous = true;  // Keep listening until manually stopped or long silence
     recognition.interimResults = true;
     recognition.lang = 'en-US';
 
@@ -39,35 +41,55 @@ export function setupSpeechRecognition() {
             }
         }
 
-        // Update interim display
-        const interimEl = document.getElementById('interimTranscript');
-        if (interimEl) interimEl.textContent = interimTranscript;
+        // Accumulate final transcripts
+        if (finalTranscript) {
+            accumulatedTranscript += (accumulatedTranscript ? ' ' : '') + finalTranscript;
+        }
 
-        if (finalTranscript && onSpeechResult) {
-            onSpeechResult(finalTranscript);
+        // Update interim display with accumulated + current interim
+        const interimEl = document.getElementById('interimTranscript');
+        if (interimEl) {
+            interimEl.textContent = accumulatedTranscript + (interimTranscript ? ' ' + interimTranscript : '');
+        }
+
+        // Call result callback with current state
+        if (onSpeechResult) {
+            onSpeechResult(accumulatedTranscript + (interimTranscript ? ' ' + interimTranscript : ''));
         }
     };
 
     recognition.onerror = (event) => {
         console.error('Speech recognition error:', event.error);
-        setState('isRecording', false);
+        // Don't reset on no-speech error, just let it end naturally
+        if (event.error !== 'no-speech') {
+            setState('isRecording', false);
+        }
     };
 
     recognition.onend = () => {
         setState('isRecording', false);
+
         // Update mic button
         const micBtn = document.getElementById('micBtn');
         if (micBtn) {
             micBtn.classList.remove('recording');
-            micBtn.querySelector('.mic-status')?.remove();
         }
+
+        // Auto-send if we have accumulated transcript
+        if (accumulatedTranscript.trim() && onRecordingEnd) {
+            onRecordingEnd(accumulatedTranscript.trim());
+        }
+
+        accumulatedTranscript = '';
     };
 }
 
 /**
  * Toggle recording
+ * @param {Function} onResult - Called with transcript as user speaks (interim updates)
+ * @param {Function} onEnd - Called with final transcript when recording ends (for auto-send)
  */
-export function toggleRecording(callback) {
+export function toggleRecording(onResult, onEnd = null) {
     if (!recognition) {
         console.warn('Speech recognition not available');
         return;
@@ -77,7 +99,9 @@ export function toggleRecording(callback) {
         recognition.stop();
         setState('isRecording', false);
     } else {
-        onSpeechResult = callback;
+        accumulatedTranscript = '';
+        onSpeechResult = onResult;
+        onRecordingEnd = onEnd;
         recognition.start();
         setState('isRecording', true);
 

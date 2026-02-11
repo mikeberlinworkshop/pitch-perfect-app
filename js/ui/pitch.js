@@ -113,7 +113,7 @@ export function renderPitch() {
                             </div>
                             <span class="mic-label" id="micLabel">Tap to speak</span>
                         </button>
-                        <p class="voice-hint" id="voiceHint">Tap the microphone, speak, then tap again when done.</p>
+                        <p class="voice-hint" id="voiceHint">Tap to start speaking. It auto-stops when you pause.</p>
                         <div class="recording-indicator hidden" id="recordingIndicator">
                             <div class="pulse-ring"></div>
                             <span>Listening... tap again when done</span>
@@ -162,57 +162,59 @@ async function showVCIntro() {
 }
 
 function setupPitchEvents() {
-    // Voice input with tap-to-toggle
+    // Voice input - tap to start, auto-stops on silence
     const micBtn = document.getElementById('micBtn');
     const recordingIndicator = document.getElementById('recordingIndicator');
     const voiceHint = document.getElementById('voiceHint');
     const micLabel = document.getElementById('micLabel');
-    let isRecording = false;
-    let currentTranscript = '';
 
-    const handleMicClick = () => {
-        if (isRecording) {
-            // Stop recording
-            isRecording = false;
-            micBtn?.classList.remove('recording');
-            recordingIndicator?.classList.add('hidden');
-            voiceHint?.classList.remove('hidden');
-            if (micLabel) micLabel.textContent = 'Tap to speak';
+    const startRecording = () => {
+        micBtn?.classList.add('recording');
+        recordingIndicator?.classList.remove('hidden');
+        voiceHint?.classList.add('hidden');
+        if (micLabel) micLabel.textContent = 'Listening...';
 
-            // Stop the recognition
-            toggleRecording(() => {});
-
-            // Clear interim transcript
-            const interimEl = document.getElementById('interimTranscript');
-            if (interimEl) interimEl.textContent = '';
-
-            // Send the message if we have transcript
-            if (currentTranscript.trim()) {
-                sendVoiceMessage(currentTranscript.trim());
-            }
-            currentTranscript = '';
-        } else {
-            // Start recording
-            isRecording = true;
-            micBtn?.classList.add('recording');
-            recordingIndicator?.classList.remove('hidden');
-            voiceHint?.classList.add('hidden');
-            if (micLabel) micLabel.textContent = 'Tap to send';
-            currentTranscript = '';
-
-            toggleRecording((transcript) => {
-                currentTranscript = transcript;
-                // Show interim transcript
+        toggleRecording(
+            // onResult - update display as user speaks
+            (transcript) => {
                 const interimEl = document.getElementById('interimTranscript');
                 if (interimEl) {
                     interimEl.textContent = transcript;
                 }
-            });
-        }
+            },
+            // onEnd - auto-send when recording stops (silence detected)
+            (finalTranscript) => {
+                // Reset UI
+                micBtn?.classList.remove('recording');
+                recordingIndicator?.classList.add('hidden');
+                voiceHint?.classList.remove('hidden');
+                if (micLabel) micLabel.textContent = 'Tap to speak';
+
+                // Clear interim display
+                const interimEl = document.getElementById('interimTranscript');
+                if (interimEl) interimEl.textContent = '';
+
+                // Send the message
+                if (finalTranscript.trim()) {
+                    sendVoiceMessage(finalTranscript.trim());
+                }
+            }
+        );
     };
 
-    // Single click handler for tap-to-toggle
-    micBtn?.addEventListener('click', handleMicClick);
+    const stopRecording = () => {
+        // Manually stop - the onEnd callback will handle sending
+        toggleRecording(() => {}, null);
+    };
+
+    // Tap to start, tap again to stop early (or let it auto-stop on silence)
+    micBtn?.addEventListener('click', () => {
+        if (state.isRecording) {
+            stopRecording();
+        } else {
+            startRecording();
+        }
+    });
 
     // Voice toggle
     const voiceToggle = document.getElementById('voiceToggle');
