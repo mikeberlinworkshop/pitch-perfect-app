@@ -891,6 +891,154 @@ body {
 }
 
 /* ============================================
+   LIVE FEEDBACK PANEL
+   ============================================ */
+
+.feedback-panel {
+    border-bottom: 1px solid var(--border);
+    background: rgba(15, 23, 42, 0.6);
+    transition: all 0.3s ease;
+}
+
+.feedback-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.feedback-header:hover {
+    background: rgba(245, 158, 11, 0.05);
+}
+
+.feedback-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+}
+
+.feedback-title svg {
+    width: 14px;
+    height: 14px;
+}
+
+.feedback-chevron {
+    width: 16px;
+    height: 16px;
+    color: var(--text-muted);
+    transition: transform 0.3s ease;
+}
+
+.feedback-panel.collapsed .feedback-chevron {
+    transform: rotate(0deg);
+}
+
+.feedback-panel.expanded .feedback-chevron {
+    transform: rotate(180deg);
+}
+
+.feedback-content {
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.feedback-panel.collapsed .feedback-content {
+    max-height: 0;
+    padding: 0 16px;
+    opacity: 0;
+}
+
+.feedback-panel.expanded .feedback-content {
+    max-height: 200px;
+    padding: 0 16px 12px;
+    opacity: 1;
+}
+
+.feedback-notes {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    padding: 12px;
+    background: var(--bg-card);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    min-height: 60px;
+    max-height: 100px;
+    overflow-y: auto;
+}
+
+.feedback-empty {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.feedback-pause-btn {
+    margin-top: 10px;
+    width: 100%;
+    justify-content: center;
+    font-size: 12px;
+    padding: 8px 12px;
+    color: var(--text-secondary);
+    border-color: var(--border);
+}
+
+.feedback-pause-btn:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: rgba(245, 158, 11, 0.1);
+}
+
+/* Sentiment-based Ring Colors */
+.vc-avatar-container.sentiment-positive .vc-avatar-ring {
+    border-color: var(--success) !important;
+}
+
+.vc-avatar-container.sentiment-positive.speaking .vc-avatar-ring {
+    animation-name: vc-pulse-ring-positive;
+}
+
+@keyframes vc-pulse-ring-positive {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.4;
+        border-color: rgba(16, 185, 129, 0.3);
+    }
+    50% {
+        transform: scale(1.02);
+        opacity: 1;
+        border-color: rgba(16, 185, 129, 0.7);
+    }
+}
+
+.vc-avatar-container.sentiment-skeptical .vc-avatar-ring {
+    border-color: var(--danger) !important;
+}
+
+.vc-avatar-container.sentiment-skeptical.speaking .vc-avatar-ring {
+    animation-name: vc-pulse-ring-skeptical;
+}
+
+@keyframes vc-pulse-ring-skeptical {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.4;
+        border-color: rgba(239, 68, 68, 0.3);
+    }
+    50% {
+        transform: scale(1.02);
+        opacity: 1;
+        border-color: rgba(239, 68, 68, 0.7);
+    }
+}
+
+/* ============================================
    COACHING SCREEN
    ============================================ */
 

@@ -38,7 +38,12 @@ export const state = {
     voiceEnabled: true,
 
     // VC intro
-    vcIntroShown: false
+    vcIntroShown: false,
+
+    // Live feedback
+    feedbackExpanded: false,
+    liveFeedback: '',
+    currentSentiment: 'neutral'  // 'positive', 'neutral', 'skeptical'
 };
 
 const listeners = new Map();
@@ -71,6 +76,9 @@ export function resetPitch() {
     state.results = null;
     state.coaching = null;
     state.vcIntroShown = false;
+    state.feedbackExpanded = false;
+    state.liveFeedback = '';
+    state.currentSentiment = 'neutral';
 }
 
 export function resetAll() {

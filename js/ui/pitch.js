@@ -87,6 +87,26 @@ export function renderPitch() {
                     </button>
                 </div>
 
+                <!-- Collapsible Feedback Panel -->
+                <div class="feedback-panel ${state.feedbackExpanded ? 'expanded' : 'collapsed'}" id="feedbackPanel">
+                    <div class="feedback-header" id="feedbackToggle">
+                        <span class="feedback-title">
+                            <i data-lucide="activity"></i>
+                            Live Feedback
+                        </span>
+                        <i data-lucide="${state.feedbackExpanded ? 'chevron-up' : 'chevron-down'}" class="feedback-chevron"></i>
+                    </div>
+                    <div class="feedback-content" id="feedbackContent">
+                        <div class="feedback-notes" id="feedbackNotes">
+                            ${state.liveFeedback || '<span class="feedback-empty">Feedback will appear as you pitch...</span>'}
+                        </div>
+                        <button class="btn btn-ghost btn-sm feedback-pause-btn" id="getFeedbackBtn">
+                            <i data-lucide="pause-circle"></i>
+                            Pause & Get Detailed Feedback
+                        </button>
+                    </div>
+                </div>
+
                 <div class="chat-messages" id="chatMessages">
                     ${state.conversationHistory.length === 0 ? `
                         <div class="chat-intro">
@@ -257,6 +277,25 @@ function setupPitchEvents() {
             }
         });
     });
+
+    // Feedback panel toggle
+    const feedbackToggle = document.getElementById('feedbackToggle');
+    feedbackToggle?.addEventListener('click', () => {
+        state.feedbackExpanded = !state.feedbackExpanded;
+        const panel = document.getElementById('feedbackPanel');
+        if (panel) {
+            panel.classList.toggle('expanded', state.feedbackExpanded);
+            panel.classList.toggle('collapsed', !state.feedbackExpanded);
+        }
+        // Update chevron icon
+        if (window.lucide) lucide.createIcons();
+    });
+
+    // Pause & Get Feedback button
+    const getFeedbackBtn = document.getElementById('getFeedbackBtn');
+    getFeedbackBtn?.addEventListener('click', () => {
+        getDetailedFeedback();
+    });
 }
 
 function advanceSlide() {
@@ -305,8 +344,11 @@ async function sendVoiceMessage(message) {
             state.currentSlideWords
         );
 
-        // Store scores
-        if (scores) state.turnScores.push(scores);
+        // Store scores and update live feedback
+        if (scores) {
+            state.turnScores.push(scores);
+            generateLiveFeedback(scores);
+        }
 
         // Add VC response
         addMessage('vc', response);
@@ -413,4 +455,132 @@ function scrollToBottom() {
     if (messagesDiv) {
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
+}
+
+/**
+ * Calculate current sentiment from turn scores
+ */
+function calculateSentiment() {
+    if (state.turnScores.length === 0) return 'neutral';
+
+    // Get last 3 scores for recent sentiment
+    const recentScores = state.turnScores.slice(-3);
+    let totalScore = 0;
+    let count = 0;
+
+    recentScores.forEach(scores => {
+        // Average key dimensions
+        const dims = ['objection_handling', 'clarity', 'presence', 'coachability'];
+        dims.forEach(dim => {
+            if (scores[dim] !== undefined) {
+                totalScore += scores[dim];
+                count++;
+            }
+        });
+    });
+
+    if (count === 0) return 'neutral';
+    const avg = totalScore / count;
+
+    if (avg >= 1) return 'positive';
+    if (avg <= -1) return 'skeptical';
+    return 'neutral';
+}
+
+/**
+ * Update sentiment display on avatar
+ */
+function updateSentimentDisplay() {
+    const sentiment = calculateSentiment();
+    state.currentSentiment = sentiment;
+
+    const avatarContainer = document.getElementById('vcAvatarContainer');
+    if (avatarContainer) {
+        avatarContainer.classList.remove('sentiment-positive', 'sentiment-neutral', 'sentiment-skeptical');
+        avatarContainer.classList.add(`sentiment-${sentiment}`);
+    }
+}
+
+/**
+ * Generate quick live feedback from recent scores
+ */
+function generateLiveFeedback(scores) {
+    if (!scores) return;
+
+    const feedbackParts = [];
+
+    // Check notable scores
+    if (scores.clarity >= 2) feedbackParts.push('✓ Clear explanation');
+    if (scores.clarity <= -2) feedbackParts.push('⚠ Could be clearer');
+
+    if (scores.objection_handling >= 2) feedbackParts.push('✓ Strong response');
+    if (scores.objection_handling <= -2) feedbackParts.push('⚠ Address the concern');
+
+    if (scores.presence >= 2) feedbackParts.push('✓ Confident delivery');
+    if (scores.presence <= -2) feedbackParts.push('⚠ Project more confidence');
+
+    if (scores.coachability >= 2) feedbackParts.push('✓ Good adaptability');
+
+    if (feedbackParts.length > 0) {
+        const newFeedback = feedbackParts.join(' | ');
+        state.liveFeedback = newFeedback;
+
+        const feedbackNotes = document.getElementById('feedbackNotes');
+        if (feedbackNotes) {
+            feedbackNotes.innerHTML = newFeedback;
+        }
+    }
+
+    // Update sentiment
+    updateSentimentDisplay();
+}
+
+/**
+ * Get detailed feedback and pause pitch
+ */
+async function getDetailedFeedback() {
+    const slide = getCurrentSlide();
+    const persona = state.selectedPersona;
+
+    setLoading(true);
+
+    try {
+        // Build context for feedback request
+        const slideContext = slide ? `Slide ${slide.pageNumber}: ${slide.text}` : 'Q&A phase';
+        const recentExchanges = state.conversationHistory.slice(-6);
+
+        const feedbackPrompt = `The founder has paused to get explicit feedback. Based on the recent conversation, provide 2-3 specific, actionable coaching points. Be direct but constructive. Focus on what they could do better right now. Format as bullet points.`;
+
+        const { response } = await getVCResponse(
+            feedbackPrompt,
+            persona,
+            slideContext,
+            recentExchanges,
+            'feedback'
+        );
+
+        // Show feedback in a more prominent way
+        const feedbackNotes = document.getElementById('feedbackNotes');
+        if (feedbackNotes) {
+            feedbackNotes.innerHTML = `<strong>Feedback on this slide:</strong><br>${response.replace(/\n/g, '<br>')}`;
+        }
+
+        // Expand the feedback panel
+        state.feedbackExpanded = true;
+        const panel = document.getElementById('feedbackPanel');
+        if (panel) {
+            panel.classList.add('expanded');
+            panel.classList.remove('collapsed');
+        }
+
+        // Speak the feedback
+        if (state.voiceEnabled) {
+            await speakText(response, persona.voiceId);
+        }
+
+    } catch (error) {
+        console.error('Error getting detailed feedback:', error);
+    }
+
+    setLoading(false);
 }
