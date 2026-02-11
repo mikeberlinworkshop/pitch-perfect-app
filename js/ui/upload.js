@@ -90,8 +90,20 @@ export function renderUpload() {
                 </div>
             </div>
 
-            <div class="start-section ${(!state.slides.length || !state.selectedPersona) ? 'disabled' : ''}">
-                <button class="btn btn-primary btn-lg" id="startPitchBtn" ${(!state.slides.length || !state.selectedPersona) ? 'disabled' : ''}>
+            <div class="industry-section ${state.selectedPersona?.id !== 'industry-expert' ? 'hidden' : ''}" id="industrySection">
+                <h2>3. Select Your Industry</h2>
+                <p class="section-hint">The Industry Expert will tailor questions to your specific vertical.</p>
+                <div class="industry-grid">
+                    ${['Fintech', 'Healthcare', 'Climate / Cleantech', 'Agriculture', 'Logistics', 'Real Estate', 'Education', 'Other'].map(industry => `
+                        <button class="industry-chip ${state.selectedIndustry === industry ? 'selected' : ''}" data-industry="${industry}">
+                            ${industry}
+                        </button>
+                    `).join('')}
+                </div>
+            </div>
+
+            <div class="start-section ${(!state.slides.length || !state.selectedPersona || (state.selectedPersona?.id === 'industry-expert' && !state.selectedIndustry)) ? 'disabled' : ''}">
+                <button class="btn btn-primary btn-lg" id="startPitchBtn" ${(!state.slides.length || !state.selectedPersona || (state.selectedPersona?.id === 'industry-expert' && !state.selectedIndustry)) ? 'disabled' : ''}>
                     <i data-lucide="play"></i>
                     Start Pitching
                 </button>
@@ -192,20 +204,57 @@ function setupPersonaSelection() {
             document.querySelectorAll('.persona-card').forEach(c => c.classList.remove('selected'));
             card.classList.add('selected');
 
-            // Enable start button
-            const startBtn = document.getElementById('startPitchBtn');
-            if (startBtn && state.slides.length > 0) {
-                startBtn.disabled = false;
-                startBtn.closest('.start-section')?.classList.remove('disabled');
+            // Show/hide industry section for Industry Expert
+            const industrySection = document.getElementById('industrySection');
+            if (industrySection) {
+                if (personaId === 'industry-expert') {
+                    industrySection.classList.remove('hidden');
+                } else {
+                    industrySection.classList.add('hidden');
+                    setState('selectedIndustry', null);
+                }
             }
+
+            // Enable start button (unless Industry Expert without industry selected)
+            updateStartButton();
         });
     });
+
+    // Industry chip selection
+    document.querySelectorAll('.industry-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            const industry = chip.dataset.industry;
+            setState('selectedIndustry', industry);
+
+            // Update selection visual
+            document.querySelectorAll('.industry-chip').forEach(c => c.classList.remove('selected'));
+            chip.classList.add('selected');
+
+            // Enable start button
+            updateStartButton();
+        });
+    });
+}
+
+function updateStartButton() {
+    const startBtn = document.getElementById('startPitchBtn');
+    const startSection = startBtn?.closest('.start-section');
+
+    const isReady = state.slides.length > 0 &&
+                    state.selectedPersona &&
+                    (state.selectedPersona.id !== 'industry-expert' || state.selectedIndustry);
+
+    if (startBtn) startBtn.disabled = !isReady;
+    if (startSection) startSection.classList.toggle('disabled', !isReady);
 }
 
 function setupStartButton() {
     const startBtn = document.getElementById('startPitchBtn');
     startBtn?.addEventListener('click', () => {
-        if (state.slides.length > 0 && state.selectedPersona) {
+        const isReady = state.slides.length > 0 &&
+                        state.selectedPersona &&
+                        (state.selectedPersona.id !== 'industry-expert' || state.selectedIndustry);
+        if (isReady) {
             navigate('pitch');
         }
     });

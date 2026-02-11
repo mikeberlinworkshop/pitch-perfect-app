@@ -11,6 +11,7 @@ export const state = {
 
     // Persona
     selectedPersona: null,
+    selectedIndustry: null,  // For Industry Expert persona
 
     // Pitch state
     currentSlideIndex: 0,
@@ -75,6 +76,7 @@ export function resetAll() {
     state.slides = [];
     state.deckFileName = null;
     state.selectedPersona = null;
+    state.selectedIndustry = null;
     state.currentAttempt = 1;
     state.isAudioPlaying = false;
     state.isRecording = false;

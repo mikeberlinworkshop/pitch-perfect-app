@@ -3,6 +3,7 @@
 // ============================================
 
 import { API_ENDPOINTS } from './config.js';
+import { state } from './state.js';
 
 /**
  * Call Claude API via Netlify function
@@ -57,7 +58,12 @@ export async function getVCResponse(userMessage, persona, slideContext, conversa
         ? `\n\nYou are now in the Q&A portion after the presentation. Ask deeper follow-up questions based on everything you've seen in the deck. Dig into weaknesses you noticed. This is your chance to really probe.`
         : `\n\nThe founder is currently presenting their pitch deck. ${slideContext ? `They are showing a slide with this content:\n---\n${slideContext}\n---\nAsk questions relevant to this specific slide content and what they're saying about it.` : ''}`;
 
-    const systemPrompt = persona.systemPrompt + phaseInstructions +
+    // Add industry context for Industry Expert persona
+    const industryContext = persona.id === 'industry-expert' && state.selectedIndustry
+        ? `\n\nIMPORTANT: This startup is in the ${state.selectedIndustry} vertical. You are an expert investor who specializes in ${state.selectedIndustry}. Draw on deep domain knowledge of this specific industry — regulations, distribution channels, key players, technical challenges, and common failure modes. Ask questions that only a true ${state.selectedIndustry} specialist would know to ask.`
+        : '';
+
+    const systemPrompt = persona.systemPrompt + industryContext + phaseInstructions +
         `\n\nIMPORTANT: This is attempt ${conversationHistory.length === 0 ? '#1' : 'ongoing'}. Stay in character at all times.`;
 
     const response = await callClaude(messages, systemPrompt);
