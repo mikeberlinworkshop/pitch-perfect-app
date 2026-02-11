@@ -19,6 +19,12 @@ export function renderPitch() {
     if (!screen) return;
 
     const persona = state.selectedPersona;
+    if (!persona) {
+        console.error('No persona selected, cannot render pitch screen');
+        screen.innerHTML = '<div style="padding: 40px; color: white;">Error: No persona selected. Please go back and select a VC.</div>';
+        return;
+    }
+
     const slide = getCurrentSlide();
     const totalSlides = state.slides.length;
     const currentNum = state.currentSlideIndex + 1;
