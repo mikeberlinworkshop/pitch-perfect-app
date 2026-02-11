@@ -8,6 +8,7 @@ export const state = {
     // Deck
     slides: [],              // Array of { imageDataUrl, text, pageNumber }
     deckFileName: null,
+    deckSummary: null,       // AI-generated summary of the deck
 
     // Persona
     selectedPersona: null,
@@ -85,6 +86,7 @@ export function resetAll() {
     resetPitch();
     state.slides = [];
     state.deckFileName = null;
+    state.deckSummary = null;
     state.selectedPersona = null;
     state.selectedIndustry = null;
     state.currentAttempt = 1;

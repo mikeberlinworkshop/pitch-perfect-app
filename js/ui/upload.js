@@ -5,6 +5,7 @@
 import { state, setState } from '../state.js';
 import { parsePDF, parseImages, getFileType } from '../pdf.js';
 import { personas, getPersonaAvatar } from '../personas.js';
+import { callClaude } from '../api.js';
 
 let navigate = null;
 
@@ -67,23 +68,17 @@ export function renderUpload() {
                     <div class="slide-thumbnails" id="slideThumbnails">
                         ${state.slides.map((s, i) => `<img src="${s.imageDataUrl}" alt="Slide ${i+1}" />`).join('')}
                     </div>
-                    <button class="btn btn-ghost btn-sm deck-analysis-toggle" id="deckAnalysisToggle">
-                        <i data-lucide="file-text"></i>
-                        View What AI Sees
-                        <i data-lucide="chevron-down" class="toggle-chevron"></i>
+                    <button class="btn btn-secondary btn-sm deck-summary-btn" id="deckSummaryBtn">
+                        <i data-lucide="sparkles"></i>
+                        Get Deck Summary
                     </button>
-                    <div class="deck-analysis hidden" id="deckAnalysis">
-                        <div class="analysis-slides">
-                            ${state.slides.map((s, i) => `
-                                <div class="analysis-slide">
-                                    <div class="analysis-slide-header">
-                                        <span class="analysis-slide-num">Slide ${i + 1}</span>
-                                    </div>
-                                    <div class="analysis-slide-content">
-                                        ${s.text ? `<p>${s.text.substring(0, 300)}${s.text.length > 300 ? '...' : ''}</p>` : '<p class="no-text">No text extracted</p>'}
-                                    </div>
-                                </div>
-                            `).join('')}
+                    <div class="deck-summary hidden" id="deckSummary">
+                        <div class="deck-summary-loading hidden" id="deckSummaryLoading">
+                            <div class="spinner"></div>
+                            <span>Analyzing your deck...</span>
+                        </div>
+                        <div class="deck-summary-content" id="deckSummaryContent">
+                            ${state.deckSummary || ''}
                         </div>
                     </div>
                 </div>
@@ -177,13 +172,10 @@ function setupDropzone() {
         if (window.lucide) lucide.createIcons();
     });
 
-    // Deck analysis toggle
-    const analysisToggle = document.getElementById('deckAnalysisToggle');
-    const analysisPanel = document.getElementById('deckAnalysis');
-    analysisToggle?.addEventListener('click', () => {
-        analysisPanel?.classList.toggle('hidden');
-        analysisToggle?.classList.toggle('expanded');
-        if (window.lucide) lucide.createIcons();
+    // Deck summary button
+    const summaryBtn = document.getElementById('deckSummaryBtn');
+    summaryBtn?.addEventListener('click', () => {
+        generateDeckSummary();
     });
 }
 
@@ -287,4 +279,70 @@ function setupStartButton() {
             navigate('pitch');
         }
     });
+}
+
+async function generateDeckSummary() {
+    const summaryDiv = document.getElementById('deckSummary');
+    const loadingDiv = document.getElementById('deckSummaryLoading');
+    const contentDiv = document.getElementById('deckSummaryContent');
+    const summaryBtn = document.getElementById('deckSummaryBtn');
+
+    // If already have a summary, just toggle visibility
+    if (state.deckSummary) {
+        summaryDiv?.classList.toggle('hidden');
+        return;
+    }
+
+    // Show loading
+    summaryDiv?.classList.remove('hidden');
+    loadingDiv?.classList.remove('hidden');
+    contentDiv?.classList.add('hidden');
+    if (summaryBtn) summaryBtn.disabled = true;
+
+    try {
+        // Build deck content for analysis
+        const deckContent = state.slides.map((s, i) =>
+            `Slide ${i + 1}: ${s.text || '[Image only - no text]'}`
+        ).join('\n\n');
+
+        const systemPrompt = `You are a pitch deck analyst. Given the content of a startup pitch deck, provide a brief summary that helps the founder understand how their deck reads.
+
+Format your response as:
+**The Pitch:** [1-2 sentence summary of what this startup does]
+
+**Key Claims:**
+• [Claim 1 from the deck]
+• [Claim 2 from the deck]
+• [Claim 3 from the deck]
+
+**What VCs Will Probe:**
+• [Question/concern area 1]
+• [Question/concern area 2]
+
+Keep it concise and actionable. Be direct about what's strong and what might get challenged.`;
+
+        const response = await callClaude(
+            [{ role: 'user', content: `Here's my pitch deck:\n\n${deckContent}` }],
+            systemPrompt
+        );
+
+        // Store and display
+        setState('deckSummary', response);
+
+        if (contentDiv) {
+            contentDiv.innerHTML = response.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+            contentDiv.classList.remove('hidden');
+        }
+        loadingDiv?.classList.add('hidden');
+
+    } catch (error) {
+        console.error('Error generating deck summary:', error);
+        if (contentDiv) {
+            contentDiv.innerHTML = '<span class="error">Failed to generate summary. Please try again.</span>';
+            contentDiv.classList.remove('hidden');
+        }
+        loadingDiv?.classList.add('hidden');
+    }
+
+    if (summaryBtn) summaryBtn.disabled = false;
 }
