@@ -67,6 +67,25 @@ export function renderUpload() {
                     <div class="slide-thumbnails" id="slideThumbnails">
                         ${state.slides.map((s, i) => `<img src="${s.imageDataUrl}" alt="Slide ${i+1}" />`).join('')}
                     </div>
+                    <button class="btn btn-ghost btn-sm deck-analysis-toggle" id="deckAnalysisToggle">
+                        <i data-lucide="file-text"></i>
+                        View What AI Sees
+                        <i data-lucide="chevron-down" class="toggle-chevron"></i>
+                    </button>
+                    <div class="deck-analysis hidden" id="deckAnalysis">
+                        <div class="analysis-slides">
+                            ${state.slides.map((s, i) => `
+                                <div class="analysis-slide">
+                                    <div class="analysis-slide-header">
+                                        <span class="analysis-slide-num">Slide ${i + 1}</span>
+                                    </div>
+                                    <div class="analysis-slide-content">
+                                        ${s.text ? `<p>${s.text.substring(0, 300)}${s.text.length > 300 ? '...' : ''}</p>` : '<p class="no-text">No text extracted</p>'}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -155,6 +174,15 @@ function setupDropzone() {
         setState('slides', []);
         setState('deckFileName', null);
         renderUpload();
+        if (window.lucide) lucide.createIcons();
+    });
+
+    // Deck analysis toggle
+    const analysisToggle = document.getElementById('deckAnalysisToggle');
+    const analysisPanel = document.getElementById('deckAnalysis');
+    analysisToggle?.addEventListener('click', () => {
+        analysisPanel?.classList.toggle('hidden');
+        analysisToggle?.classList.toggle('expanded');
         if (window.lucide) lucide.createIcons();
     });
 }

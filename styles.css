@@ -416,6 +416,88 @@ body {
     border: 1px solid var(--border);
 }
 
+/* Deck Analysis Toggle */
+.deck-analysis-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.deck-analysis-toggle:hover {
+    color: var(--text-secondary);
+}
+
+.deck-analysis-toggle svg {
+    width: 14px;
+    height: 14px;
+}
+
+.deck-analysis-toggle .toggle-chevron {
+    margin-left: auto;
+    transition: transform 0.3s ease;
+}
+
+.deck-analysis-toggle.expanded .toggle-chevron {
+    transform: rotate(180deg);
+}
+
+/* Deck Analysis Panel */
+.deck-analysis {
+    margin-top: 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    max-height: 300px;
+    overflow-y: auto;
+    animation: fadeSlideIn 0.3s ease-out;
+}
+
+.analysis-slides {
+    display: flex;
+    flex-direction: column;
+}
+
+.analysis-slide {
+    border-bottom: 1px solid var(--border);
+}
+
+.analysis-slide:last-child {
+    border-bottom: none;
+}
+
+.analysis-slide-header {
+    padding: 10px 16px;
+    background: rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid var(--border);
+}
+
+.analysis-slide-num {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.analysis-slide-content {
+    padding: 12px 16px;
+}
+
+.analysis-slide-content p {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.analysis-slide-content .no-text {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
 /* Persona Cards */
 .persona-grid {
     display: grid;
