@@ -150,31 +150,21 @@ export function stopAudio() {
 }
 
 // ============================================
-// AUDIO VISUALIZER
+// AVATAR SPEAKING ANIMATION
 // ============================================
 
-let visualizerInterval = null;
-
 function startVisualizer() {
-    const bars = document.querySelectorAll('.visualizer-bar');
-    if (bars.length === 0) return;
-
-    visualizerInterval = setInterval(() => {
-        bars.forEach(bar => {
-            const height = Math.random() * 100;
-            bar.style.height = `${Math.max(10, height)}%`;
-        });
-    }, 100);
+    const avatarContainer = document.getElementById('vcAvatarContainer');
+    if (avatarContainer) {
+        avatarContainer.classList.add('speaking');
+    }
 }
 
 function stopVisualizer() {
-    if (visualizerInterval) {
-        clearInterval(visualizerInterval);
-        visualizerInterval = null;
+    const avatarContainer = document.getElementById('vcAvatarContainer');
+    if (avatarContainer) {
+        avatarContainer.classList.remove('speaking');
     }
-    document.querySelectorAll('.visualizer-bar').forEach(bar => {
-        bar.style.height = '10%';
-    });
 }
 
 // ============================================

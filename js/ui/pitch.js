@@ -70,14 +70,12 @@ export function renderPitch() {
             <!-- Right: Chat -->
             <div class="chat-panel">
                 <div class="vc-header">
-                    <div class="vc-avatar" style="border-color: ${persona.color}">
-                        <img src="${getPersonaAvatar(persona)}" alt="${persona.name}" />
-                        <div class="visualizer">
-                            <div class="visualizer-bar"></div>
-                            <div class="visualizer-bar"></div>
-                            <div class="visualizer-bar"></div>
-                            <div class="visualizer-bar"></div>
-                            <div class="visualizer-bar"></div>
+                    <div class="vc-avatar-container" id="vcAvatarContainer">
+                        <div class="vc-avatar-ring"></div>
+                        <div class="vc-avatar-ring"></div>
+                        <div class="vc-avatar-ring"></div>
+                        <div class="vc-avatar" style="border-color: ${persona.color}">
+                            <img src="${getPersonaAvatar(persona)}" alt="${persona.name}" />
                         </div>
                     </div>
                     <div class="vc-info">
@@ -113,12 +111,12 @@ export function renderPitch() {
                             <div class="mic-icon-wrap">
                                 <i data-lucide="mic"></i>
                             </div>
-                            <span class="mic-label">Hold to speak</span>
+                            <span class="mic-label" id="micLabel">Tap to speak</span>
                         </button>
-                        <p class="voice-hint" id="voiceHint">Press and hold, then speak. Release when done.</p>
+                        <p class="voice-hint" id="voiceHint">Tap the microphone, speak, then tap again when done.</p>
                         <div class="recording-indicator hidden" id="recordingIndicator">
                             <div class="pulse-ring"></div>
-                            <span>Listening...</span>
+                            <span>Listening... tap again when done</span>
                         </div>
                     </div>
                     <div class="loading-indicator hidden" id="loadingIndicator">
@@ -164,65 +162,57 @@ async function showVCIntro() {
 }
 
 function setupPitchEvents() {
-    // Voice input with press-and-hold
+    // Voice input with tap-to-toggle
     const micBtn = document.getElementById('micBtn');
     const recordingIndicator = document.getElementById('recordingIndicator');
     const voiceHint = document.getElementById('voiceHint');
+    const micLabel = document.getElementById('micLabel');
+    let isRecording = false;
     let currentTranscript = '';
 
-    const startRecording = () => {
-        micBtn?.classList.add('recording');
-        recordingIndicator?.classList.remove('hidden');
-        voiceHint?.classList.add('hidden');
-        currentTranscript = '';
+    const handleMicClick = () => {
+        if (isRecording) {
+            // Stop recording
+            isRecording = false;
+            micBtn?.classList.remove('recording');
+            recordingIndicator?.classList.add('hidden');
+            voiceHint?.classList.remove('hidden');
+            if (micLabel) micLabel.textContent = 'Tap to speak';
 
-        toggleRecording((transcript) => {
-            currentTranscript = transcript;
-            // Show interim transcript
+            // Stop the recognition
+            toggleRecording(() => {});
+
+            // Clear interim transcript
             const interimEl = document.getElementById('interimTranscript');
-            if (interimEl) {
-                interimEl.textContent = transcript;
+            if (interimEl) interimEl.textContent = '';
+
+            // Send the message if we have transcript
+            if (currentTranscript.trim()) {
+                sendVoiceMessage(currentTranscript.trim());
             }
-        });
+            currentTranscript = '';
+        } else {
+            // Start recording
+            isRecording = true;
+            micBtn?.classList.add('recording');
+            recordingIndicator?.classList.remove('hidden');
+            voiceHint?.classList.add('hidden');
+            if (micLabel) micLabel.textContent = 'Tap to send';
+            currentTranscript = '';
+
+            toggleRecording((transcript) => {
+                currentTranscript = transcript;
+                // Show interim transcript
+                const interimEl = document.getElementById('interimTranscript');
+                if (interimEl) {
+                    interimEl.textContent = transcript;
+                }
+            });
+        }
     };
 
-    const stopRecording = () => {
-        micBtn?.classList.remove('recording');
-        recordingIndicator?.classList.add('hidden');
-        voiceHint?.classList.remove('hidden');
-
-        // Stop recording and send message
-        toggleRecording(() => {});
-
-        // Clear interim transcript
-        const interimEl = document.getElementById('interimTranscript');
-        if (interimEl) interimEl.textContent = '';
-
-        // Send the message if we have transcript
-        if (currentTranscript.trim()) {
-            sendVoiceMessage(currentTranscript.trim());
-        }
-        currentTranscript = '';
-    };
-
-    // Mouse events
-    micBtn?.addEventListener('mousedown', startRecording);
-    micBtn?.addEventListener('mouseup', stopRecording);
-    micBtn?.addEventListener('mouseleave', () => {
-        if (micBtn?.classList.contains('recording')) {
-            stopRecording();
-        }
-    });
-
-    // Touch events for mobile
-    micBtn?.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        startRecording();
-    });
-    micBtn?.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        stopRecording();
-    });
+    // Single click handler for tap-to-toggle
+    micBtn?.addEventListener('click', handleMicClick);
 
     // Voice toggle
     const voiceToggle = document.getElementById('voiceToggle');
